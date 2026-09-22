@@ -33,25 +33,19 @@ A modern, high-performance 3D interactive developer portfolio designed and built
 
 Ensure you have [Node.js](https://nodejs.org/) (v18 or higher) installed on your machine.
 
-### Installation
+### Setup & Run
 
-1. Clone or download the repository:
-   ```bash
-   git clone https://github.com/your-username/malik-haider-portfolio.git
-   cd malik-haider-portfolio
-   ```
-
-2. Install dependencies:
+1. Install dependencies:
    ```bash
    npm install
    ```
 
-3. Start the local development server:
+2. Start development server:
    ```bash
    npm run dev
    ```
 
-4. Open your browser and navigate to:
+3. Open in browser:
    ```
    http://localhost:3000
    ```
