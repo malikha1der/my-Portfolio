@@ -53,7 +53,6 @@ export function SkillsSection() {
   const sliderRef = useRef<HTMLDivElement>(null);
   const isPausedRef = useRef<boolean>(false);
   const isInteractingRef = useRef<boolean>(false);
-  const animationFrameRef = useRef<number | null>(null);
 
   // Sync ref with state
   useEffect(() => {
@@ -68,19 +67,24 @@ export function SkillsSection() {
   // Repeat items 3 times for a completely seamless wrap-around infinite scroll
   const loopedSkills = [...filteredSkills, ...filteredSkills, ...filteredSkills];
 
-  // Continuous smooth auto-scroll to the left
+  // Continuous smooth auto-scroll with IntersectionObserver gating (never runs when off-screen)
   useEffect(() => {
     const slider = sliderRef.current;
     if (!slider) return;
 
-    // Check prefers-reduced-motion
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (prefersReducedMotion) return;
 
-    // Speed in pixels per frame (~45px per second at 60fps)
+    let isSectionInView = false;
+    let animationFrameId: number | null = null;
     const scrollSpeed = 0.85;
 
     const animateScroll = () => {
+      if (!isSectionInView) {
+        animationFrameId = null;
+        return;
+      }
+
       if (slider && !isPausedRef.current && !isInteractingRef.current) {
         slider.scrollLeft += scrollSpeed;
 
@@ -93,14 +97,32 @@ export function SkillsSection() {
         }
       }
 
-      animationFrameRef.current = requestAnimationFrame(animateScroll);
+      animationFrameId = requestAnimationFrame(animateScroll);
     };
 
-    animationFrameRef.current = requestAnimationFrame(animateScroll);
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        isSectionInView = entry.isIntersecting;
+        if (isSectionInView) {
+          if (animationFrameId === null) {
+            animationFrameId = requestAnimationFrame(animateScroll);
+          }
+        } else {
+          if (animationFrameId !== null) {
+            cancelAnimationFrame(animationFrameId);
+            animationFrameId = null;
+          }
+        }
+      },
+      { threshold: 0.05 }
+    );
+
+    observer.observe(slider);
 
     return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
+      observer.disconnect();
+      if (animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId);
       }
     };
   }, [filteredSkills]);
@@ -162,7 +184,6 @@ export function SkillsSection() {
       const next = !prev;
       setIsPaused(next);
       if (next) {
-        // When user pauses (especially on mobile), smoothly center a full card
         requestAnimationFrame(() => {
           snapToNearestCard();
         });
@@ -193,7 +214,6 @@ export function SkillsSection() {
       }
     }
 
-    // Advance or retreat by exactly one whole card cleanly
     const targetIndex = direction === 'left' 
       ? Math.max(0, currentIndex - 1)
       : Math.min(children.length - 1, currentIndex + 1);
@@ -238,7 +258,6 @@ export function SkillsSection() {
 
           {/* Controls: Auto-scroll Pause Toggle & Step Navigation */}
           <div className="flex items-center gap-2">
-            {/* Step Navigation Arrows (Visible when paused so user can easily scroll) */}
             {isPaused && (
               <div className="flex items-center gap-1.5">
                 <button
@@ -262,7 +281,6 @@ export function SkillsSection() {
               </div>
             )}
 
-            {/* Play / Pause Toggle Button */}
             <button
               type="button"
               onClick={toggleManualPause}
@@ -318,7 +336,7 @@ export function SkillsSection() {
           onTouchEnd={handleHoldEnd}
           onPointerDown={handleHoldStart}
           onPointerUp={handleHoldEnd}
-          className={`mt-8 flex gap-6 overflow-x-auto pb-6 pt-2 select-none cursor-grab active:cursor-grabbing focus:outline-none scrollbar-none ${
+          className={`mt-8 flex gap-6 overflow-x-auto pb-6 pt-2 select-none cursor-grab active:cursor-grabbing focus:outline-none scrollbar-none touch-pan-x touch-pan-y ${
             isPaused ? 'snap-x snap-mandatory' : ''
           }`}
           tabIndex={0}

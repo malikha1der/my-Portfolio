@@ -19,7 +19,7 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
       {/* Backdrop */}
       <div
         onClick={onClose}
-        className="fixed inset-0 bg-black/80 backdrop-blur-md transition-opacity duration-300"
+        className="fixed inset-0 bg-black/90 md:bg-black/80 md:backdrop-blur-md transition-opacity duration-300"
         aria-hidden="true"
       />
 
@@ -46,7 +46,7 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
           />
           <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent" />
           <div className="absolute bottom-4 left-4">
-            <span className="rounded-full border border-cyan-500/40 bg-zinc-950/80 px-3 py-1 font-mono text-xs text-cyan-300 backdrop-blur-md">
+            <span className="rounded-full border border-cyan-500/40 bg-zinc-950/90 px-3 py-1 font-mono text-xs text-cyan-300 md:backdrop-blur-md">
               {project.category}
             </span>
           </div>

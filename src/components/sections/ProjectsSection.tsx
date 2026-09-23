@@ -81,14 +81,14 @@ export function ProjectsSection() {
                   
                   {/* Category Pill Over Image */}
                   <div className="absolute top-3 left-3">
-                    <span className="rounded-full border border-zinc-800 bg-zinc-950/80 px-2.5 py-1 font-mono text-[10px] text-zinc-300 backdrop-blur-md">
+                    <span className="rounded-full border border-zinc-800 bg-zinc-950/90 px-2.5 py-1 font-mono text-[10px] text-zinc-300 md:backdrop-blur-md">
                       {project.category}
                     </span>
                   </div>
 
                   {project.featured && (
                     <div className="absolute top-3 right-3">
-                      <span className="rounded-full border border-cyan-500/40 bg-cyan-950/80 px-2.5 py-1 font-mono text-[10px] text-cyan-300 backdrop-blur-md">
+                      <span className="rounded-full border border-cyan-500/40 bg-cyan-950/90 px-2.5 py-1 font-mono text-[10px] text-cyan-300 md:backdrop-blur-md">
                         FEATURED
                       </span>
                     </div>
@@ -98,7 +98,7 @@ export function ProjectsSection() {
                   <button
                     type="button"
                     onClick={() => setActiveModalProject(project)}
-                    className="absolute bottom-3 right-3 flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-700/80 bg-zinc-900/90 text-zinc-300 opacity-0 group-hover:opacity-100 transition-all hover:bg-zinc-800 hover:text-white"
+                    className="absolute bottom-3 right-3 flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-700/80 bg-zinc-900/90 text-zinc-300 opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-all hover:bg-zinc-800 hover:text-white"
                     aria-label={`View architecture details for ${project.title}`}
                   >
                     <Info className="h-4 w-4" />

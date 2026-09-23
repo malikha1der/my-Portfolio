@@ -53,7 +53,7 @@ export function AboutSection() {
           
           {/* Left Column: Interactive Terminal Preview */}
           <div className="lg:col-span-5 flex flex-col">
-            <div className="h-full rounded-2xl border border-zinc-800/80 bg-zinc-950/80 p-6 backdrop-blur-md shadow-2xl flex flex-col justify-between font-mono text-xs text-zinc-300">
+            <div className="h-full rounded-2xl border border-zinc-800/80 bg-zinc-950/90 p-6 md:backdrop-blur-md shadow-2xl flex flex-col justify-between font-mono text-xs text-zinc-300">
               <div>
                 {/* Terminal Header */}
                 <div className="flex items-center justify-between border-b border-zinc-800 pb-4 mb-4">

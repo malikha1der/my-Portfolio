@@ -1,4 +1,4 @@
-import { ArrowUp, Heart } from 'lucide-react';
+import { ArrowUp } from 'lucide-react';
 import { PERSONAL_INFO } from '../../data/portfolioData';
 
 export function Footer() {
@@ -20,15 +20,15 @@ export function Footer() {
               MH
             </div>
             <p className="text-xs font-mono text-zinc-400">
-              © {new Date().getFullYear()} {PERSONAL_INFO.name}. Built with Three.js & React.
+              © {new Date().getFullYear()} {PERSONAL_INFO.name}. All rights reserved.
             </p>
           </div>
 
-          {/* Right: Scroll to Top */}
+          {/* Right: Scroll to Top (Selective will-change: transform) */}
           <button
             type="button"
             onClick={scrollToTop}
-            className="flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/60 px-3.5 py-2 text-xs font-mono text-zinc-300 transition-colors hover:border-zinc-700 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
+            className="flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/60 px-3.5 py-2 text-xs font-mono text-zinc-300 transition-all hover:border-zinc-700 hover:text-white active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 will-change-transform"
             aria-label="Back to Top"
           >
             <span>TOP</span>

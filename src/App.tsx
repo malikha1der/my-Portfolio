@@ -13,32 +13,34 @@ export default function App() {
   const [activeSection, setActiveSection] = useState('hero');
 
   useEffect(() => {
+    // Zero-overhead scroll spy using IntersectionObserver (eliminates layout-thrashing scroll reads)
     const sectionIds = ['hero', 'about', 'skills', 'projects', 'experience', 'contact'];
-    const handleScroll = () => {
-      const scrollPosition = window.scrollY + 120;
+    const elements = sectionIds
+      .map((id) => document.getElementById(id))
+      .filter((el): el is HTMLElement => el !== null);
 
-      for (const id of sectionIds) {
-        const element = document.getElementById(id);
-        if (element) {
-          const top = element.offsetTop;
-          const height = element.offsetHeight;
-          if (scrollPosition >= top && scrollPosition < top + height) {
-            setActiveSection(id);
-            break;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && entry.target.id) {
+            setActiveSection(entry.target.id);
           }
-        }
+        });
+      },
+      {
+        // 20% from top, 60% from bottom gives precise active section detection during scroll
+        rootMargin: '-15% 0px -55% 0px',
+        threshold: 0,
       }
-    };
+    );
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll();
-
-    return () => window.removeEventListener('scroll', handleScroll);
+    elements.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
   }, []);
 
   return (
     <div className="relative min-h-screen bg-[#08080a] text-zinc-100 selection:bg-cyan-500/20 selection:text-cyan-200">
-      {/* Interactive Cursor Follower (Desktop only) */}
+      {/* Interactive Cursor Follower (Desktop only, automatically null on mobile/touch) */}
       <CustomCursor />
 
       {/* Sticky Compact Navigation */}

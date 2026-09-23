@@ -1,0 +1,17 @@
+{
+  "name": "Malik Haider - Frontend Developer & Creative Technologist",
+  "short_name": "Malik Haider",
+  "description": "3D Interactive Developer Portfolio showcasing high-performance web applications, WebGL, and modern design engineering.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#08080a",
+  "theme_color": "#08080a",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

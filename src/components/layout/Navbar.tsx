@@ -20,8 +20,21 @@ export function Navbar({ activeSection }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
+    let ticking = false;
+    let lastScrolled = false;
+
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 30);
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const scrolled = window.scrollY > 30;
+          if (scrolled !== lastScrolled) {
+            lastScrolled = scrolled;
+            setIsScrolled(scrolled);
+          }
+          ticking = false;
+        });
+        ticking = true;
+      }
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -56,9 +69,9 @@ export function Navbar({ activeSection }: NavbarProps) {
   return (
     <header
       id="main-navigation"
-      className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${
+      className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 will-change-transform ${
         isScrolled
-          ? 'border-b border-zinc-800/80 bg-zinc-950/85 py-3.5 backdrop-blur-xl shadow-lg shadow-black/20'
+          ? 'border-b border-zinc-800/80 bg-zinc-950/95 py-3.5 md:backdrop-blur-xl md:bg-zinc-950/85 shadow-lg shadow-black/20'
           : 'bg-transparent py-5'
       }`}
     >
@@ -88,7 +101,7 @@ export function Navbar({ activeSection }: NavbarProps) {
         </a>
 
         {/* Desktop Navigation Links */}
-        <nav className="hidden items-center gap-1 rounded-full border border-zinc-800/80 bg-zinc-900/70 p-1.5 backdrop-blur-md md:flex">
+        <nav className="hidden items-center gap-1 rounded-full border border-zinc-800/80 bg-zinc-900/70 p-1.5 md:backdrop-blur-md md:flex">
           {NAV_LINKS.map((link) => {
             const isActive = activeSection === link.href.substring(1);
             return (
@@ -135,9 +148,9 @@ export function Navbar({ activeSection }: NavbarProps) {
         </button>
       </div>
 
-      {/* Mobile Drawer Navigation */}
+      {/* Mobile Drawer Navigation (Opaque on mobile to eliminate backdrop blur fill-rate cost) */}
       {mobileMenuOpen && (
-        <div className="border-b border-zinc-800 bg-zinc-950/95 px-6 py-6 backdrop-blur-2xl md:hidden animate-in fade-in slide-in-from-top-4 duration-200">
+        <div className="border-b border-zinc-800 bg-zinc-950 px-6 py-6 md:hidden animate-in fade-in slide-in-from-top-4 duration-200">
           <div className="flex flex-col gap-2">
             <div className="mb-2 flex items-center gap-2 px-3 py-1 font-mono text-[11px] text-zinc-400">
               <Terminal className="h-3.5 w-3.5 text-cyan-400" />

@@ -1,7 +1,11 @@
-import { Suspense } from 'react';
-import { ArrowDown, Sparkles, Send, Github, Terminal, Layers } from 'lucide-react';
-import { Hero3DCanvas } from '../3d/Hero3DCanvas';
+import React, { Suspense, lazy } from 'react';
+import { ArrowDown, Send, Github, Terminal, Layers } from 'lucide-react';
 import { PERSONAL_INFO } from '../../data/portfolioData';
+
+// Code-split Three.js into an asynchronous vendor chunk so initial page load is near-instant
+const Hero3DCanvas = lazy(() =>
+  import('../3d/Hero3DCanvas').then((module) => ({ default: module.Hero3DCanvas }))
+);
 
 export function HeroSection() {
   const scrollToProjects = (e: React.MouseEvent) => {
@@ -26,10 +30,10 @@ export function HeroSection() {
       aria-label="Hero Section"
       className="relative min-h-[92vh] flex items-center justify-center pt-24 pb-12 sm:pt-28 sm:pb-20 overflow-hidden"
     >
-      {/* Background Decorative Grid Lines */}
+      {/* Background Decorative Grid Lines (Gated heavy blurs on mobile to prevent GPU rasterization jank) */}
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(#1f2937_1px,transparent_1px)] [background-size:32px_32px] opacity-25" />
-      <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 w-[700px] h-[500px] bg-cyan-600/10 rounded-full blur-[140px]" />
-      <div className="pointer-events-none absolute -bottom-32 right-10 w-[500px] h-[400px] bg-blue-600/10 rounded-full blur-[130px]" />
+      <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 w-[700px] h-[500px] bg-cyan-600/10 rounded-full blur-[80px] sm:blur-[140px] hidden sm:block" />
+      <div className="pointer-events-none absolute -bottom-32 right-10 w-[500px] h-[400px] bg-blue-600/10 rounded-full blur-[70px] sm:blur-[130px] hidden sm:block" />
 
       <div className="relative mx-auto w-full max-w-7xl px-6 sm:px-8">
         <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-12 lg:gap-8">
@@ -37,7 +41,7 @@ export function HeroSection() {
           {/* Left Column: Typography & CTAs */}
           <div className="flex flex-col items-start lg:col-span-6 z-10">
             {/* Status Badge */}
-            <div className="mb-6 inline-flex items-center gap-2.5 rounded-full border border-zinc-800 bg-zinc-900/80 px-3.5 py-1.5 backdrop-blur-md">
+            <div className="mb-6 inline-flex items-center gap-2.5 rounded-full border border-zinc-800 bg-zinc-900/90 px-3.5 py-1.5 md:backdrop-blur-md">
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
@@ -111,10 +115,10 @@ export function HeroSection() {
             </div>
           </div>
 
-          {/* Right Column: 3D Interactive Mannequin Canvas */}
+          {/* Right Column: 3D Interactive Mannequin Canvas (Always active on mobile, optimized with lazy chunk) */}
           <div className="relative flex items-center justify-center lg:col-span-6 h-[460px] sm:h-[540px] lg:h-[620px] w-full">
-            {/* Ambient Circular Frame Glow */}
-            <div className="pointer-events-none absolute inset-6 sm:inset-12 rounded-full bg-gradient-to-tr from-cyan-950/20 via-zinc-900/40 to-transparent border border-zinc-800/40 shadow-2xl" />
+            {/* Ambient Circular Frame */}
+            <div className="pointer-events-none absolute inset-6 sm:inset-12 rounded-full bg-gradient-to-tr from-cyan-950/20 via-zinc-900/40 to-transparent border border-zinc-800/40" />
 
             {/* 3D WebGL Canvas */}
             <Suspense fallback={

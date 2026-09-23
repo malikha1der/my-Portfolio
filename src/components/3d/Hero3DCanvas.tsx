@@ -19,7 +19,7 @@ export function Hero3DCanvas() {
     const container = containerRef.current;
     if (!container) return;
 
-    // Check prefers-reduced-motion
+    // Check prefers-reduced-motion & mobile viewport
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const isMobile = window.innerWidth < 768;
 
@@ -37,8 +37,11 @@ export function Hero3DCanvas() {
       antialias: !isMobile,
       alpha: true,
       powerPreference: 'high-performance',
+      precision: isMobile ? 'mediump' : 'highp',
     });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.25 : 1.75));
+    // Lower pixel ratio on mobile (1.0 max) to prevent thermal throttle & GPU fill-rate jank
+    const pixelRatio = isMobile ? Math.min(window.devicePixelRatio, 1.0) : Math.min(window.devicePixelRatio, 1.5);
+    renderer.setPixelRatio(pixelRatio);
     renderer.setSize(width, height);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.15;
@@ -71,16 +74,25 @@ export function Hero3DCanvas() {
       metalness: 0.95,
     });
 
-    const visorMat = new THREE.MeshPhysicalMaterial({
-      color: 0x05070a,
-      roughness: 0.1,
-      metalness: 0.2,
-      transmission: 0.6,
-      opacity: 0.95,
-      transparent: true,
-      clearcoat: 1.0,
-      clearcoatRoughness: 0.1,
-    });
+    // On mobile, use MeshStandardMaterial to avoid expensive multi-pass transmission buffer
+    const visorMat = isMobile
+      ? new THREE.MeshStandardMaterial({
+          color: 0x05070a,
+          roughness: 0.1,
+          metalness: 0.85,
+          transparent: true,
+          opacity: 0.88,
+        })
+      : new THREE.MeshPhysicalMaterial({
+          color: 0x05070a,
+          roughness: 0.1,
+          metalness: 0.2,
+          transmission: 0.6,
+          opacity: 0.95,
+          transparent: true,
+          clearcoat: 1.0,
+          clearcoatRoughness: 0.1,
+        });
 
     const cyanGlowMat = new THREE.MeshBasicMaterial({
       color: 0x00f0ff,
@@ -99,8 +111,7 @@ export function Hero3DCanvas() {
     ) => {
       parent.add(mesh);
 
-      // Random scattered position in a 3D sphere/box
-      const scatterRadius = isMobile ? 2.5 : 4.0;
+      const scatterRadius = isMobile ? 2.2 : 4.0;
       const scatteredPos = new THREE.Vector3(
         targetPos.x + (Math.random() - 0.5) * scatterRadius * 2,
         targetPos.y + (Math.random() - 0.5) * scatterRadius * 1.8 + 1.0,
@@ -113,7 +124,6 @@ export function Hero3DCanvas() {
         targetRot.z + (Math.random() - 0.5) * Math.PI * 2
       );
 
-      // Initialize mesh at scattered state
       if (!prefersReducedMotion) {
         mesh.position.copy(scatteredPos);
         mesh.rotation.copy(scatteredRot);
@@ -134,12 +144,12 @@ export function Hero3DCanvas() {
 
     // --- CONSTRUCT THE HEAD FRAGMENTS ---
     // 1. Cranium Upper Dome
-    const craniumGeom = new THREE.SphereGeometry(0.38, 16, 14, 0, Math.PI * 2, 0, Math.PI * 0.6);
+    const craniumGeom = new THREE.SphereGeometry(0.38, isMobile ? 12 : 16, isMobile ? 10 : 14, 0, Math.PI * 2, 0, Math.PI * 0.6);
     const craniumMesh = new THREE.Mesh(craniumGeom, darkMat);
     registerFragment(craniumMesh, headGroup, new THREE.Vector3(0, 0.2, -0.05), new THREE.Euler(0, 0, 0), 0.1);
 
     // 2. Visor / Sleek Cybernetic Eye Plate
-    const visorGeom = new THREE.CylinderGeometry(0.36, 0.36, 0.14, 20, 1, false, -Math.PI * 0.45, Math.PI * 0.9);
+    const visorGeom = new THREE.CylinderGeometry(0.36, 0.36, 0.14, isMobile ? 14 : 20, 1, false, -Math.PI * 0.45, Math.PI * 0.9);
     const visorMesh = new THREE.Mesh(visorGeom, visorMat);
     registerFragment(visorMesh, headGroup, new THREE.Vector3(0, 0.14, 0.05), new THREE.Euler(0, 0, 0), 0.25);
 
@@ -162,8 +172,9 @@ export function Hero3DCanvas() {
     registerFragment(rightTemple, headGroup, new THREE.Vector3(0.35, 0.15, -0.05), new THREE.Euler(0, -0.1, 0.1), 0.2);
 
     // 5. Neck Ring Connectors
-    for (let i = 0; i < 3; i++) {
-      const ringGeom = new THREE.TorusGeometry(0.14 + i * 0.02, 0.02, 8, 20);
+    const neckRingCount = isMobile ? 2 : 3;
+    for (let i = 0; i < neckRingCount; i++) {
+      const ringGeom = new THREE.TorusGeometry(0.14 + i * 0.02, 0.02, 6, isMobile ? 12 : 20);
       const ringMesh = new THREE.Mesh(ringGeom, darkAccentMat);
       registerFragment(
         ringMesh,
@@ -180,7 +191,7 @@ export function Hero3DCanvas() {
     const clavicleMesh = new THREE.Mesh(clavicleGeom, darkAccentMat);
     registerFragment(clavicleMesh, torsoGroup, new THREE.Vector3(0, 0.65, 0), new THREE.Euler(0, 0, 0), 0.2);
 
-    // 7. Pectoral / Chest Armor Plates (Split Left & Right for mechanical detail)
+    // 7. Pectoral / Chest Armor Plates
     const chestPlateGeom = new THREE.BoxGeometry(0.5, 0.42, 0.22);
     const leftChest = new THREE.Mesh(chestPlateGeom, darkMat);
     registerFragment(leftChest, torsoGroup, new THREE.Vector3(-0.3, 0.38, 0.08), new THREE.Euler(-0.08, 0.05, -0.05), 0.18);
@@ -194,7 +205,8 @@ export function Hero3DCanvas() {
     registerFragment(coreMesh, torsoGroup, new THREE.Vector3(0, 0.36, 0.18), new THREE.Euler(0, 0, 0), 0.35);
 
     // 9. Rib Cage Lateral Plates
-    for (let i = 0; i < 3; i++) {
+    const ribCount = isMobile ? 2 : 3;
+    for (let i = 0; i < ribCount; i++) {
       const ribGeom = new THREE.BoxGeometry(0.42 - i * 0.05, 0.09, 0.2);
       const leftRib = new THREE.Mesh(ribGeom, darkAccentMat);
       registerFragment(
@@ -216,8 +228,9 @@ export function Hero3DCanvas() {
     }
 
     // 10. Spine Vertebrae (Back Column)
-    for (let i = 0; i < 4; i++) {
-      const vertGeom = new THREE.CylinderGeometry(0.06, 0.07, 0.1, 8);
+    const vertCount = isMobile ? 3 : 4;
+    for (let i = 0; i < vertCount; i++) {
+      const vertGeom = new THREE.CylinderGeometry(0.06, 0.07, 0.1, 6);
       const vertMesh = new THREE.Mesh(vertGeom, darkAccentMat);
       registerFragment(
         vertMesh,
@@ -229,16 +242,16 @@ export function Hero3DCanvas() {
     }
 
     // 11. Shoulders (Deltoid Articulations)
-    const shoulderGeom = new THREE.SphereGeometry(0.24, 12, 10);
+    const shoulderGeom = new THREE.SphereGeometry(0.24, 10, 8);
     const leftShoulder = new THREE.Mesh(shoulderGeom, darkMat);
     registerFragment(leftShoulder, torsoGroup, new THREE.Vector3(-0.85, 0.55, 0), new THREE.Euler(0, 0, 0.2), 0.15);
 
     const rightShoulder = new THREE.Mesh(shoulderGeom, darkMat);
     registerFragment(rightShoulder, torsoGroup, new THREE.Vector3(0.85, 0.55, 0), new THREE.Euler(0, 0, -0.2), 0.15);
 
-    // 12. Floating Kinetic Micro-Fragments (Floating around character like nanite geometry)
+    // 12. Floating Kinetic Micro-Fragments
     const naniteGeom = new THREE.BoxGeometry(0.05, 0.05, 0.05);
-    const naniteCount = isMobile ? 18 : 36;
+    const naniteCount = isMobile ? 12 : 36;
     for (let i = 0; i < naniteCount; i++) {
       const naniteMesh = new THREE.Mesh(naniteGeom, i % 3 === 0 ? cyanGlowMat : darkAccentMat);
       const theta = (i / naniteCount) * Math.PI * 2;
@@ -258,7 +271,7 @@ export function Hero3DCanvas() {
     }
 
     // --- AMBIENT PARTICLES / STAR DUST IN BACKGROUND ---
-    const starCount = isMobile ? 80 : 180;
+    const starCount = isMobile ? 50 : 160;
     const starGeom = new THREE.BufferGeometry();
     const starPositions = new Float32Array(starCount * 3);
     for (let i = 0; i < starCount * 3; i += 3) {
@@ -269,7 +282,7 @@ export function Hero3DCanvas() {
     starGeom.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
     const starMat = new THREE.PointsMaterial({
       color: 0x60a5fa,
-      size: isMobile ? 0.04 : 0.05,
+      size: isMobile ? 0.035 : 0.05,
       transparent: true,
       opacity: 0.45,
     });
@@ -284,12 +297,10 @@ export function Hero3DCanvas() {
     mainKeyLight.position.set(3, 5, 4);
     scene.add(mainKeyLight);
 
-    // Dynamic Cyan Rim Light (reacts to mouse)
     const cyanLight = new THREE.PointLight(0x00f0ff, 2.8, 12);
     cyanLight.position.set(-2, 1, 2);
     scene.add(cyanLight);
 
-    // Warm Specular Accent Light
     const accentLight = new THREE.PointLight(0xf59e0b, 1.6, 10);
     accentLight.position.set(2.5, -1, 1.5);
     scene.add(accentLight);
@@ -301,7 +312,6 @@ export function Hero3DCanvas() {
     let smoothMouseY = 0;
 
     const handleMouseMove = (e: MouseEvent) => {
-      // Map window coordinates to [-1, 1]
       normalizedMouseX = (e.clientX / window.innerWidth) * 2 - 1;
       normalizedMouseY = -(e.clientY / window.innerHeight) * 2 + 1;
     };
@@ -313,32 +323,50 @@ export function Hero3DCanvas() {
     const startTime = performance.now();
     let isFinished = prefersReducedMotion;
 
-    // Cubic bezier ease-out approximation
     const easeOutCubic = (x: number): number => {
       return 1 - Math.pow(1 - x, 3);
     };
 
-    let animationFrameId: number;
+    // --- OPTIMIZATION & INTERSECTION OBSERVER CONTROLS ---
+    let animationFrameId: number | null = null;
+    let isInView = true;
+    let isDocumentVisible = !document.hidden;
+    let lastRenderTime = 0;
+    // Cap framerate on mobile to 40 FPS (25ms minimum frame interval) to prevent thermal & scroll jank
+    const minFrameInterval = isMobile ? 25 : 16.6;
 
     const renderLoop = (now: number) => {
+      // Pause completely if scrolled out of view or tab is hidden
+      if (!isInView || !isDocumentVisible) {
+        animationFrameId = null;
+        return;
+      }
+
+      animationFrameId = requestAnimationFrame(renderLoop);
+
+      // Frame rate cap to save mobile GPU
+      const delta = now - lastRenderTime;
+      if (delta < minFrameInterval) {
+        return;
+      }
+      lastRenderTime = now - (delta % minFrameInterval);
+
       const elapsed = (now - startTime) / 1000;
       const rawProgress = Math.min(1, elapsed / assemblyDuration);
       setLoadProgress(Math.round(rawProgress * 100));
 
       // 1. ANIMATE FRAGMENT ASSEMBLY
       if (!isFinished) {
-        fragmentPieces.forEach((fragment) => {
-          // Individual stagger with piece delay
+        for (let i = 0; i < fragmentPieces.length; i++) {
+          const fragment = fragmentPieces[i];
           const localT = Math.max(0, Math.min(1, (rawProgress - fragment.delay * 0.4) / (1 - fragment.delay * 0.4)));
           const eased = easeOutCubic(localT);
 
           fragment.mesh.position.lerpVectors(fragment.scatteredPos, fragment.assembledPos, eased);
-
-          // Smooth rotational alignment
           fragment.mesh.rotation.x = fragment.scatteredRot.x + (fragment.assembledRot.x - fragment.scatteredRot.x) * eased;
           fragment.mesh.rotation.y = fragment.scatteredRot.y + (fragment.assembledRot.y - fragment.scatteredRot.y) * eased;
           fragment.mesh.rotation.z = fragment.scatteredRot.z + (fragment.assembledRot.z - fragment.scatteredRot.z) * eased;
-        });
+        }
 
         if (rawProgress >= 1) {
           isFinished = true;
@@ -346,53 +374,97 @@ export function Hero3DCanvas() {
         }
       }
 
-      // 2. MOUSE TRACKING & INTERPOLATION (HEAD & BODY)
-      // Damping / Spring interpolation
+      // 2. MOUSE TRACKING & INTERPOLATION
       smoothMouseX += (normalizedMouseX - smoothMouseX) * 0.06;
       smoothMouseY += (normalizedMouseY - smoothMouseY) * 0.06;
 
-      // Realistic Subtle Head Look-At
-      // Restrict rotation bounds: Horizontal ±24 deg, Vertical ±16 deg
       headGroup.rotation.y = smoothMouseX * 0.42;
       headGroup.rotation.x = -smoothMouseY * 0.28;
 
-      // Subtle breathing & torso lean
       const breathing = Math.sin(now * 0.0018) * 0.025;
       torsoGroup.position.y = breathing;
       torsoGroup.rotation.y = smoothMouseX * 0.12;
       torsoGroup.rotation.z = -smoothMouseX * 0.04;
 
-      // Subtle dynamic lighting motion following cursor
       cyanLight.position.x = -2.5 + smoothMouseX * 1.5;
       cyanLight.position.y = 1.0 + smoothMouseY * 1.2;
 
-      // Subtle ambient background drift
       starField.rotation.y = now * 0.00008;
       starField.position.x = -smoothMouseX * 0.4;
       starField.position.y = -smoothMouseY * 0.3;
 
       renderer.render(scene, camera);
-      animationFrameId = requestAnimationFrame(renderLoop);
     };
 
-    animationFrameId = requestAnimationFrame(renderLoop);
+    const startRenderLoop = () => {
+      if (animationFrameId === null && isInView && isDocumentVisible) {
+        lastRenderTime = performance.now();
+        animationFrameId = requestAnimationFrame(renderLoop);
+      }
+    };
+
+    const stopRenderLoop = () => {
+      if (animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
+    };
+
+    // IntersectionObserver to pause when scrolled out of view
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        isInView = entry.isIntersecting;
+        if (isInView) {
+          startRenderLoop();
+        } else {
+          stopRenderLoop();
+        }
+      },
+      { threshold: 0.05 }
+    );
+
+    observer.observe(container);
+
+    // Visibility change listener (pause when tab is backgrounded)
+    const handleVisibilityChange = () => {
+      isDocumentVisible = !document.hidden;
+      if (isDocumentVisible && isInView) {
+        startRenderLoop();
+      } else {
+        stopRenderLoop();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Initial start
+    startRenderLoop();
 
     // Resize Handler
+    let resizeTicking = false;
     const handleResize = () => {
-      if (!container) return;
-      const newWidth = container.clientWidth;
-      const newHeight = container.clientHeight;
-      camera.aspect = newWidth / newHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(newWidth, newHeight);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, window.innerWidth < 768 ? 1.25 : 1.75));
+      if (!resizeTicking) {
+        window.requestAnimationFrame(() => {
+          if (!container) return;
+          const newWidth = container.clientWidth;
+          const newHeight = container.clientHeight;
+          camera.aspect = newWidth / newHeight;
+          camera.updateProjectionMatrix();
+          renderer.setSize(newWidth, newHeight);
+          renderer.setPixelRatio(isMobile ? Math.min(window.devicePixelRatio, 1.0) : Math.min(window.devicePixelRatio, 1.5));
+          resizeTicking = false;
+        });
+        resizeTicking = true;
+      }
     };
 
-    window.addEventListener('resize', handleResize);
+    window.addEventListener('resize', handleResize, { passive: true });
 
     // CLEANUP TO PREVENT MEMORY LEAKS
     return () => {
-      cancelAnimationFrame(animationFrameId);
+      stopRenderLoop();
+      observer.disconnect();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('resize', handleResize);
 
@@ -427,9 +499,9 @@ export function Hero3DCanvas() {
       {/* 3D WebGL Canvas Mount Container */}
       <div ref={containerRef} className="h-full w-full" />
 
-      {/* Assembly status indicator (fades out gracefully upon completion) */}
+      {/* Assembly status indicator */}
       {!isAssemblyComplete && (
-        <div className="pointer-events-none absolute bottom-6 left-1/2 -translate-x-1/2 rounded-full border border-cyan-500/20 bg-zinc-950/80 px-4 py-1.5 backdrop-blur-md transition-opacity duration-700">
+        <div className="pointer-events-none absolute bottom-6 left-1/2 -translate-x-1/2 rounded-full border border-cyan-500/20 bg-zinc-950/90 px-4 py-1.5 md:backdrop-blur-md transition-opacity duration-700">
           <div className="flex items-center gap-2.5 text-xs text-zinc-400">
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-400 opacity-75"></span>
