@@ -75,28 +75,37 @@ export function SkillsSection() {
     ? SKILLS_DATA
     : SKILLS_DATA.filter((s) => s.category === selectedCategory);
 
-  // Repeat items 3 times for a completely seamless infinite wrap-around
-  const loopedSkills = [...filteredSkills, ...filteredSkills, ...filteredSkills];
+  // Repeat items 4 times so there is abundant runway to swipe left or right indefinitely
+  const loopedSkills = [
+    ...filteredSkills, 
+    ...filteredSkills, 
+    ...filteredSkills, 
+    ...filteredSkills
+  ];
 
-  // Set initial scroll offset to the middle third so user can scroll left or right immediately
+  // Set initial scroll offset to the second quarter so user can scroll left or right immediately
   useEffect(() => {
     const slider = sliderRef.current;
     if (!slider) return;
     
-    // Defer slightly to ensure layout widths are calculated
-    const timer = setTimeout(() => {
-      if (slider) {
-        const oneThird = slider.scrollWidth / 3;
-        if (oneThird > 0 && slider.scrollLeft < 10) {
-          slider.scrollLeft = oneThird;
-        }
+    const setInitialPos = () => {
+      if (slider && slider.scrollWidth > 0) {
+        const oneSection = slider.scrollWidth / 4;
+        slider.scrollLeft = oneSection;
       }
-    }, 50);
+    };
 
-    return () => clearTimeout(timer);
+    setInitialPos();
+    const frameId = requestAnimationFrame(setInitialPos);
+    const timer = setTimeout(setInitialPos, 80);
+
+    return () => {
+      cancelAnimationFrame(frameId);
+      clearTimeout(timer);
+    };
   }, [filteredSkills]);
 
-  // Update active card based on center position during manual scrolling
+  // Update active card based on center position
   const updateActiveCard = useCallback(() => {
     const slider = sliderRef.current;
     if (!slider) return;
@@ -124,22 +133,21 @@ export function SkillsSection() {
     }
   }, [loopedSkills, activeSkillName]);
 
-  // Handle native scroll event: seamless loop wrapping + active card calculation
+  // Native scroll handler: handles infinite loop wrap-around seamlessly
   const handleScroll = useCallback(() => {
     const slider = sliderRef.current;
     if (!slider) return;
 
-    // Infinite wrap-around bounds
-    const oneThirdWidth = slider.scrollWidth / 3;
-    if (oneThirdWidth > 0) {
-      if (slider.scrollLeft >= oneThirdWidth * 2) {
-        slider.scrollLeft -= oneThirdWidth;
-      } else if (slider.scrollLeft <= 5) {
-        slider.scrollLeft += oneThirdWidth;
+    const oneSection = slider.scrollWidth / 4;
+    if (oneSection > 0) {
+      // Seamless wrap-around bounds
+      if (slider.scrollLeft >= oneSection * 2.5) {
+        slider.scrollLeft -= oneSection;
+      } else if (slider.scrollLeft <= oneSection * 0.5) {
+        slider.scrollLeft += oneSection;
       }
     }
 
-    // Throttle active card calculation with requestAnimationFrame
     if (!scrollTickingRef.current) {
       window.requestAnimationFrame(() => {
         updateActiveCard();
@@ -149,7 +157,7 @@ export function SkillsSection() {
     }
   }, [updateActiveCard]);
 
-  // Continuous smooth auto-scroll with IntersectionObserver gating (only runs when in viewport and not interacting)
+  // Continuous smooth auto-scroll with IntersectionObserver gating
   useEffect(() => {
     const slider = sliderRef.current;
     if (!slider) return;
@@ -167,14 +175,17 @@ export function SkillsSection() {
         return;
       }
 
+      // Only increment scrollLeft when auto-scroll is active and user is not touching/dragging
       if (slider && !isPausedRef.current && !isInteractingRef.current && !isDraggingRef.current) {
         slider.scrollLeft += scrollSpeed;
 
-        const oneThirdWidth = slider.scrollWidth / 3;
-        if (slider.scrollLeft >= oneThirdWidth * 2) {
-          slider.scrollLeft -= oneThirdWidth;
-        } else if (slider.scrollLeft <= 5) {
-          slider.scrollLeft += oneThirdWidth;
+        const oneSection = slider.scrollWidth / 4;
+        if (oneSection > 0) {
+          if (slider.scrollLeft >= oneSection * 2.5) {
+            slider.scrollLeft -= oneSection;
+          } else if (slider.scrollLeft <= oneSection * 0.5) {
+            slider.scrollLeft += oneSection;
+          }
         }
       }
 
@@ -208,7 +219,7 @@ export function SkillsSection() {
     };
   }, [filteredSkills]);
 
-  // --- TOUCH HANDLERS (Mobile: Butter-smooth native kinetic momentum) ---
+  // --- TOUCH HANDLERS (Mobile: 100% native butter-smooth horizontal scrolling) ---
   const handleTouchStart = () => {
     if (resumeTimeoutRef.current) {
       clearTimeout(resumeTimeoutRef.current);
@@ -225,19 +236,19 @@ export function SkillsSection() {
 
   const handleTouchEnd = () => {
     isInteractingRef.current = false;
-    // If not manually paused by button, gracefully resume auto-scroll after momentum settling
+    // If not manually paused by button, resume auto-scroll smoothly after momentum finishes
     if (!isManuallyToggledRef.current) {
       resumeTimeoutRef.current = window.setTimeout(() => {
         if (!isManuallyToggledRef.current && !isInteractingRef.current && !isDraggingRef.current) {
           setIsPaused(false);
         }
-      }, 1200);
+      }, 1500);
     }
   };
 
-  // --- MOUSE DRAG HANDLERS (Desktop: Grab and slide with mouse) ---
+  // --- MOUSE DRAG HANDLERS (Desktop: Click and slide) ---
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (e.button !== 0) return; // Left click only
+    if (e.button !== 0) return; // Left mouse click only
     const slider = sliderRef.current;
     if (!slider) return;
 
@@ -277,7 +288,7 @@ export function SkillsSection() {
           if (!isManuallyToggledRef.current && !isInteractingRef.current) {
             setIsPaused(false);
           }
-        }, 1000);
+        }, 1200);
       }
     }
   };
@@ -302,45 +313,16 @@ export function SkillsSection() {
     });
   };
 
-  // Step Left/Right buttons (accessible 1-card steps)
+  // Step Left/Right buttons (1-card step)
   const scrollStep = (direction: 'left' | 'right') => {
     const slider = sliderRef.current;
     if (!slider) return;
 
-    const children = Array.from(slider.children) as HTMLElement[];
-    if (!children.length) return;
-
-    const sliderCenter = slider.scrollLeft + slider.clientWidth / 2;
-    let currentIndex = 0;
-    let minDiff = Infinity;
-
-    for (let i = 0; i < children.length; i++) {
-      const child = children[i];
-      const childCenter = child.offsetLeft + child.offsetWidth / 2;
-      const diff = Math.abs(childCenter - sliderCenter);
-      if (diff < minDiff) {
-        minDiff = diff;
-        currentIndex = i;
-      }
-    }
-
-    const targetIndex = direction === 'left' 
-      ? Math.max(0, currentIndex - 1)
-      : Math.min(children.length - 1, currentIndex + 1);
-
-    const targetCard = children[targetIndex];
-    if (targetCard) {
-      const targetScrollLeft = targetCard.offsetLeft - (slider.clientWidth - targetCard.offsetWidth) / 2;
-      slider.scrollTo({
-        left: Math.max(0, targetScrollLeft),
-        behavior: 'smooth',
-      });
-
-      const skill = loopedSkills[targetIndex];
-      if (skill) {
-        setActiveSkillName(skill.name);
-      }
-    }
+    const stepAmount = 344; // Card width (320px) + gap (24px)
+    slider.scrollBy({
+      left: direction === 'left' ? -stepAmount : stepAmount,
+      behavior: 'smooth',
+    });
   };
 
   return (
@@ -362,7 +344,7 @@ export function SkillsSection() {
               Tactile mastery across modern frontend & spatial web.
             </h2>
             <p className="mt-4 text-base text-zinc-400">
-              Swipe with finger or use the controls to explore core frontend frameworks, WebGL 3D graphics, and architectural tools.
+              Slide freely with finger or mouse, or use the controls to explore core technologies and frameworks.
             </p>
           </div>
 
@@ -437,7 +419,7 @@ export function SkillsSection() {
           })}
         </div>
 
-        {/* Interactive Smooth Auto-scrolling & Free-Swiping Skills Track */}
+        {/* Interactive Smooth Horizontal Track (Native Touch Momentum on Mobile, Mouse Drag on Desktop) */}
         <div
           ref={sliderRef}
           onScroll={handleScroll}
@@ -449,8 +431,11 @@ export function SkillsSection() {
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseLeave}
-          className="mt-8 flex gap-6 overflow-x-auto pb-6 pt-2 select-none cursor-grab active:cursor-grabbing focus:outline-none scrollbar-none overscroll-x-contain touch-pan-y"
-          style={{ WebkitOverflowScrolling: 'touch' }}
+          className="mt-8 flex gap-6 overflow-x-auto pb-6 pt-2 select-none cursor-grab active:cursor-grabbing focus:outline-none scrollbar-none overscroll-x-contain"
+          style={{ 
+            WebkitOverflowScrolling: 'touch',
+            scrollBehavior: 'auto'
+          }}
           tabIndex={0}
           role="region"
           aria-label="Interactive Skills Track"
